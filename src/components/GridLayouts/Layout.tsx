@@ -55,6 +55,15 @@ export const Layout = ({datas}: LayoutProps) => {
   
    // const { data, setData } = useContext(LayoutContext);
 
+   function handleCheckAuth(){
+      const data = Cookies.get('auth')
+      if(data){
+         const storedData = JSON.parse(data);
+         setUUID(storedData.uuid);
+         setIsAuthenticated(storedData.isAuthenticated);
+      }
+   }
+
    function handleClickUser(id: any) {
       setSelectedId(id);
       
@@ -65,7 +74,7 @@ export const Layout = ({datas}: LayoutProps) => {
       setIsClick(true);
    }
 
-   function handleCopyText(uuid: string) {
+   const handleCopyText = (uuid: string) => {
       navigator.clipboard.writeText(uuid)
       .then(() => {
          setIsCopied(true)
@@ -75,7 +84,8 @@ export const Layout = ({datas}: LayoutProps) => {
       });
       setTimeout(() => {
          setIsCopied(false);
-      } , 5000);
+      } , 1000);
+      
    }
 
    function handleShowPassword() {
@@ -121,6 +131,7 @@ export const Layout = ({datas}: LayoutProps) => {
    const handleSubmit = (password: string, uuid: string)=>{
       const data:any = {isAuthenticated:'true', uuid: uuid}
       if(userInput === password){
+         console.log('uuid: ' + uuid)
          Cookies.set('auth', JSON.stringify(data));
       }else{
          alert('no matches')
@@ -220,6 +231,8 @@ export const Layout = ({datas}: LayoutProps) => {
         setDropdown({
             sortByDropdown: false,
          })
+      }else {
+         return null
       }
     };
 
@@ -235,10 +248,11 @@ export const Layout = ({datas}: LayoutProps) => {
    const readableRegistedDate = parsedRegisteredDates.map((parsedRegisteredDates: Date) => format(parsedRegisteredDates, "MMMM d, yyyy")); 
 
    useEffect(() => {
-      const sortByStorage = window.localStorage.getItem('sortBy');
-      if(sortByStorage) {
-         handleSortBy(sortByStorage)
-      }
+      // const sortByStorage = window.localStorage.getItem('sortBy');
+      // if(sortByStorage) {
+      //    handleSortBy(sortByStorage)
+      // }
+      setSortBy(null)
       
       if (!isLoading) {
          setDots(0); // Reset dots when loading becomes false
@@ -267,6 +281,15 @@ export const Layout = ({datas}: LayoutProps) => {
         document.removeEventListener('mousedown', handleClickOutside);
       };
     }, []);
+
+    useEffect(() => {
+      const interval = setInterval(() =>{
+         handleCheckAuth()
+      }, 1000)
+      return ()=>{
+         clearInterval(interval);
+      };
+    },[])
 
    return (
       <Grid
@@ -495,30 +518,43 @@ export const Layout = ({datas}: LayoutProps) => {
                                     <div
                                        className='
                                           z-50
-                                          bg-gray-300
+                                          rounded-lg
+                                          border-2
+                                          shadow-xl
+                                          border-gray-500
+                                          text-white
+                                          bg-slate-800
                                        '
                                        ref={inputRef}
                                     >
-                                       <Dropdown>
+                                       <Dropdown
+                                       >
                                           <Button
                                              onClick={() =>{
                                                 toggleSortByDropdown();
                                              }}
                                              type='button'
                                              className='
-                                                w-20
+                                                w-28
                                                 py-2
+                                                px-2
                                                 rounded-lg
+                                                border
+                                                border-opacity-20
                                                 text-center
                                                 text-white
-                                                bg-red-700
+                                                bg-red-900
                                              '
                                           >
                                              Sort By
                                           </Button>
                                           { isDropdown.sortByDropdown && 
                                              <>
-                                                <SubDropdown>
+                                                <SubDropdown
+                                                   className='
+                                                      mt-1
+                                                   '
+                                                >
                                                    <Button
                                                       onMouseOver={handleGenderMouseOver}
                                                       onClick={()=> {
@@ -528,9 +564,15 @@ export const Layout = ({datas}: LayoutProps) => {
                                                          });
                                                       }}
                                                       className={`
-                                                         hover:bg-red-800
+                                                         font-semibold
+                                                         text-lg
                                                          w-full
                                                          py-2
+                                                         border-b-2
+                                                         border-gray-500
+                                                         text-red-600
+                                                         hover:text-white
+                                                         hover:bg-red-900
                                                       `}
                                                    >
                                                       Gender
@@ -538,8 +580,10 @@ export const Layout = ({datas}: LayoutProps) => {
                                                    { isDropdown.genderDropdown &&
                                                       <SubButton
                                                          className='
-                                                            w-28
-                                                            bg-blue-900
+                                                            w-32
+                                                            font-semibold
+                                                            text-base
+                                                            bg-slate-800
                                                          '
                                                       >
                                                          <Button
@@ -552,11 +596,21 @@ export const Layout = ({datas}: LayoutProps) => {
                                                             }}
                                                             type='button'
                                                             className={`
-                                                               hover:bg-red-800
+                                                               flex
+                                                               items-center
+                                                               justify-center
+                                                               gap-1
                                                                w-full
-                                                               py-2
+                                                               py-3
+                                                               border-b-2
+                                                               border-gray-500
+                                                               hover:bg-red-800
                                                             `}
                                                          >
+                                                            <svg width="25" height="25" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                               <path d="M12 3.75a3.75 3.75 0 1 0 0 7.5 3.75 3.75 0 0 0 0-7.5Z"></path>
+                                                               <path d="M8 13.25A3.75 3.75 0 0 0 4.25 17v1.188c0 .754.546 1.396 1.29 1.517 4.278.699 8.642.699 12.92 0a1.537 1.537 0 0 0 1.29-1.517V17A3.75 3.75 0 0 0 16 13.25h-.34c-.185 0-.369.03-.544.086l-.866.283a7.251 7.251 0 0 1-4.5 0l-.866-.283a1.752 1.752 0 0 0-.543-.086H8Z"></path>
+                                                            </svg>
                                                             Male
                                                          </Button>
                                                          <Button
@@ -568,11 +622,20 @@ export const Layout = ({datas}: LayoutProps) => {
                                                                });
                                                             }}
                                                             className={`
-                                                               hover:bg-red-800
+                                                               flex
+                                                               items-center
+                                                               justify-center
+                                                               gap-1
                                                                w-full
-                                                               py-2
+                                                               py-3
+                                                               hover:bg-red-900
                                                             `}
                                                          >
+                                                            <svg width="25" height="25" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                               <path d="m13.143 5.143 2.286 2.286V8.57a3.429 3.429 0 0 1-6.852.202l-.006-1.344 2.286-1.143 2.286-1.143Z" clipRule="evenodd"></path>
+                                                               <path d="M6.286 13.714V8.571a5.714 5.714 0 0 1 11.428 0v5.143"></path>
+                                                               <path d="M20 18.857v-.832C20 14.383 15.787 12 12 12s-8 2.383-8 6.025v.832C4 19.488 4.512 20 5.143 20h13.714c.631 0 1.143-.512 1.143-1.143Z" clipRule="evenodd"></path>
+                                                            </svg>
                                                             Female
                                                          </Button>
                                                       </SubButton>
@@ -589,9 +652,15 @@ export const Layout = ({datas}: LayoutProps) => {
                                                          });
                                                       }}
                                                       className={`
-                                                         hover:bg-red-800
                                                          w-full
                                                          py-2
+                                                         font-semibold
+                                                         text-lg
+                                                         border-b-2
+                                                         border-gray-500
+                                                         text-red-600
+                                                         hover:text-white
+                                                         hover:bg-red-900
                                                       `}
                                                    >
                                                       Name
@@ -600,8 +669,10 @@ export const Layout = ({datas}: LayoutProps) => {
                                                    { isDropdown.nameDropdown &&
                                                       <SubButton
                                                          className='
-                                                            w-28
-                                                            bg-blue-900
+                                                            w-32
+                                                            font-semibold
+                                                            text-base
+                                                            bg-slate-800
                                                       '
                                                       >
                                                          <Button
@@ -614,9 +685,11 @@ export const Layout = ({datas}: LayoutProps) => {
                                                             }}
                                                             type='button'
                                                             className={`
-                                                               hover:bg-red-800
                                                                w-full
-                                                               py-2
+                                                               py-3
+                                                               border-b-2
+                                                               border-gray-500
+                                                               hover:bg-red-900
                                                             `}
                                                          >
                                                             FirstName
@@ -630,9 +703,9 @@ export const Layout = ({datas}: LayoutProps) => {
                                                                });
                                                             }}
                                                             className={`
-                                                               hover:bg-red-800
                                                                w-full
-                                                               py-2
+                                                               py-3
+                                                               hover:bg-red-900
                                                             `}
                                                          >
                                                             LastName
@@ -650,9 +723,14 @@ export const Layout = ({datas}: LayoutProps) => {
                                                          });
                                                       }}
                                                       className={`
-                                                         hover:bg-red-800
+                                                         rounded-b-lg
                                                          w-full
                                                          py-2
+                                                         font-semibold
+                                                         text-lg
+                                                         text-red-600
+                                                         hover:text-white
+                                                         hover:bg-red-900
                                                       `}
                                                    >
                                                       Country
@@ -661,9 +739,12 @@ export const Layout = ({datas}: LayoutProps) => {
                                                    { isDropdown.countryDropdown &&
                                                       <SubButton
                                                          className='
-                                                            w-28
-                                                            bg-blue-900
-                                                            max-h-40
+                                                            w-32
+                                                            font-semibold
+                                                            text-base
+                                                            bg-slate-800
+                                                            max-h-60
+                                                            mb-1
                                                             overflow-y-scroll
                                                             scrollbar-hide
                                                          '
@@ -680,9 +761,11 @@ export const Layout = ({datas}: LayoutProps) => {
                                                                }}
                                                                type='button'
                                                                className={`
-                                                                  hover:bg-red-800
                                                                   w-full
-                                                                  py-2
+                                                                  py-3
+                                                                  border-b-2
+                                                                  border-gray-500
+                                                                  hover:bg-red-900
                                                                `}
                                                             >
                                                                { country.location.country }
@@ -1020,7 +1103,8 @@ export const Layout = ({datas}: LayoutProps) => {
                                                       {data.login.uuid}
                                                    </Text> 
                                                    <Button
-                                                      onClick={()=>{
+                                                      onClick={(e: any)=>{
+                                                         e.stopPropagation();
                                                          handleCopyText(data.login.uuid)
                                                       }}
                                                       type='button'
@@ -1189,7 +1273,7 @@ export const Layout = ({datas}: LayoutProps) => {
                                                    break-words
                                                 '
                                              >
-                                                <b>{data.name.title}. {data.name.last} {data.name.first}</b>, an avid user of our platform, has been actively engaged with our service for the past year. {data.gender === 'male' ? 'He': 'She'} joined our platform in {readableRegistedDate}. {data.gender === 'male' ? 'His': 'Her'} journey on our platform reflects a diverse range of activities, showcasing the versatility of our offerings. From {data.gender === 'male' ? 'his': 'her'}  early days of exploring informative articles and engaging with online courses to enhance {data.gender === 'male' ? 'his': 'her'} professional skills, {data.gender === 'male' ? 'he': 'she'} quickly evolved into an active contributor, regularly sharing insightful content with the community. <b>{data.name.title}. {data.name.last} {data.name.first}</b>'s enthusiasm for networking also shines through {data.gender === 'male' ? 'his': 'her'} consistent participation in our webinars and virtual events, where {data.gender === 'male' ? 'he': 'she'} connects with like-minded individuals and industry experts. {data.gender === 'male' ? 'His': 'Her'} user profile is a testament to {data.gender === 'male' ? 'his': 'her'} commitment to lifelong learning and {data.gender === 'male' ? 'his': 'her'} desire to collaborate with others. <b>{data.name.title}. {data.name.last} {data.name.first}</b> embodies the vibrant and dynamic user community that our service fosters.
+                                                <b>{data.name.title}. {data.name.last} {data.name.first}</b>, an avid user of our platform, has been actively engaged with our service for {data.registered.age} years. {data.gender === 'male' ? 'He': 'She'} joined our platform in {readableRegistedDate}. {data.gender === 'male' ? 'His': 'Her'} journey on our platform reflects a diverse range of activities, showcasing the versatility of our offerings. From {data.gender === 'male' ? 'his': 'her'}  early days of exploring informative articles and engaging with online courses to enhance {data.gender === 'male' ? 'his': 'her'} professional skills, {data.gender === 'male' ? 'he': 'she'} quickly evolved into an active contributor, regularly sharing insightful content with the community. <b>{data.name.title}. {data.name.last} {data.name.first}</b>'s enthusiasm for networking also shines through {data.gender === 'male' ? 'his': 'her'} consistent participation in our webinars and virtual events, where {data.gender === 'male' ? 'he': 'she'} connects with like-minded individuals and industry experts. {data.gender === 'male' ? 'His': 'Her'} user profile is a testament to {data.gender === 'male' ? 'his': 'her'} commitment to lifelong learning and {data.gender === 'male' ? 'his': 'her'} desire to collaborate with others. <b>{data.name.title}. {data.name.last} {data.name.first}</b> embodies the vibrant and dynamic user community that our service fosters.
                                              </p>
                                           </div>
                                        </RowCol>
@@ -1304,7 +1388,6 @@ export const Layout = ({datas}: LayoutProps) => {
                                                          space-x-10
                                                       '
                                                    >
-                                                      
                                                       <svg width="30" height="30" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                          <path d="M2 10s3.5 4 10 4 10-4 10-4"></path>
                                                          <path d="M4 11.645 2 14"></path>

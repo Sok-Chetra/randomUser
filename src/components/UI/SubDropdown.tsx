@@ -6,14 +6,16 @@ import { Button } from './Button'
 interface SubDropdownProps {
    children: React.ReactNode
    ref?: any
+   className?: string
 }
 
 export const SubDropdown = ({ 
    children,
-   ref
+   ref,
+   className
 }: SubDropdownProps) => {
    return (
-      <div className='relative' ref={ref}>
+      <div className={'relative' + ' ' + className} ref={ref}>
          {children}
       </div>
    )

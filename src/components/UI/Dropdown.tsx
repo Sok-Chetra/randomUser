@@ -8,14 +8,16 @@ import { SubButton } from './SubButton'
 
 type DropdownProps = {
    children: React.ReactNode
+   className?: string
 }
 
 export const Dropdown = ({ 
-   children
+   children,
+   className
 }: DropdownProps) => {
 
    return (
-      <div className='z-50'>
+      <div className={'z-50' + ' ' + className}>
          {children}
       </div>
    )

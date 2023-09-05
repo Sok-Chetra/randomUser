@@ -18,7 +18,10 @@ export const SubButton = ({
       <span
          className={`
             absolute 
-            left-20
+            top-0
+            left-28
+            border-2
+            border-gray-500
             z-50 
             ${className}
          `}
