@@ -5,13 +5,15 @@ import { Button } from './Button'
 
 interface SubDropdownProps {
    children: React.ReactNode
+   ref?: any
 }
 
 export const SubDropdown = ({ 
-   children 
+   children,
+   ref
 }: SubDropdownProps) => {
    return (
-      <div className='relative'>
+      <div className='relative' ref={ref}>
          {children}
       </div>
    )

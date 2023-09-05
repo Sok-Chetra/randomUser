@@ -15,6 +15,7 @@ import Cookies from 'js-cookie'
 import { Loading } from '../UI/Loading'
 import { Dropdown } from '../UI/Dropdown'
 import { SubDropdown } from '../UI/SubDropdown'
+import { SubButton } from '../UI/SubButton'
 
 interface LayoutProps {
    datas: any;
@@ -33,7 +34,7 @@ export const Layout = ({datas}: LayoutProps) => {
    const [ isCopied, setIsCopied ] = useState(false);   
    const [ userInput, setUserInput ] = useState('')
    const [ uuid, setUUID ] = useState()
-   const [ searchedUser, setSearchedUser ] = useState<any[]>();
+   const [ searchedUser, setSearchedUser ] = useState<any[] | null>();
    const { isAuthenticated, setIsAuthenticated } = useLayoutContext()
    const { isClick, setIsClick } = useLayoutContext();
    const { isShown, setIsShown } = useLayoutContext()
@@ -56,6 +57,7 @@ export const Layout = ({datas}: LayoutProps) => {
 
    function handleClickUser(id: any) {
       setSelectedId(id);
+      
    }
    
    function handleClickInput (e: any) {
@@ -103,7 +105,8 @@ export const Layout = ({datas}: LayoutProps) => {
          );
       });
     
-      setSearchedUser(searchValue ? searchedDataUser : []);
+      setSearchedUser(searchValue ? searchedDataUser : null);
+      setSortBy(searchValue ? searchedDataUser : null)
     }
 
    function handleHidePassword(){
@@ -124,27 +127,51 @@ export const Layout = ({datas}: LayoutProps) => {
       }
    }
 
-   function handleSortBy (sortWith: string){
-      // alert('here')
+   function handleSortBy(sortWith: string) {
       const currentOrderBy = window.localStorage.getItem('orderBy') || 'asc';
       const newOrderBy = currentOrderBy === 'asc' ? 'desc' : 'asc';
-      window.localStorage.setItem('orderBy', newOrderBy)
-      window.localStorage.setItem('sortBy', sortWith)
-      const sortedData = datas.results.sort((a: any, b: any) =>{
+      window.localStorage.setItem('orderBy', newOrderBy);
+      window.localStorage.setItem('sortBy', sortWith);
+   
+      // Sort the entire dataset
+      const sortedData = datas.results.sort((a: any, b: any) => {
          const aPropertyValue = getNestedPropertyValue(a, sortWith);
          const bPropertyValue = getNestedPropertyValue(b, sortWith);
+   
          if (newOrderBy === 'asc') {
-            const resultA = aPropertyValue.localeCompare(bPropertyValue);
-            return resultA;
+            return aPropertyValue?.localeCompare(bPropertyValue);
          } else {
-         const resultB = bPropertyValue.localeCompare(aPropertyValue);
-            return resultB;
+            return bPropertyValue?.localeCompare(aPropertyValue);
          }
-      })
-      if(sortedData){
-         setSortBy(sortedData)
+      });
+   
+      let filteredData = sortedData;
+   
+      if (sortWith === 'male' || sortWith === 'female') {
+         // Filter data to include only 'male' or 'female' records
+         filteredData = sortedData.filter((item: any) => item.gender === sortWith);
+      } else if(sortWith.startsWith('location.country.')){
+         const countryToFilter = sortWith.substring('location.country.'.length);
+         filteredData = filterByNestedProperty(sortedData, 'location.country', countryToFilter);
       }
-   };
+   
+      if (filteredData.length > 0) {
+         const selectedItem = filteredData[0].login.uuid;
+         setSelectedId(selectedItem)
+      }
+
+      if (filteredData) {
+         setSortBy(filteredData);
+      }
+   }
+   
+   
+   function filterByNestedProperty(data: any, propertyPath: any, valueToMatch: any) {
+      return data.filter((item: any) => {
+        const propertyValue = getNestedPropertyValue(item, propertyPath);
+        return propertyValue === valueToMatch;
+      });
+    }
 
    function getNestedPropertyValue(obj: any, propertyPath: string) {
       const properties = propertyPath.split('.');
@@ -188,6 +215,14 @@ export const Layout = ({datas}: LayoutProps) => {
       });
    };
 
+   const handleClickOutside = (e: any) => {
+      if (inputRef.current && !inputRef.current.contains(e.target)) {
+        setDropdown({
+            sortByDropdown: false,
+         })
+      }
+    };
+
    const filteredData = datas.results.filter((data: any) => data.login.uuid === selectedId);
    const birthDateArray = filteredData.map((data: any) => data.dob.date);
    const registeredDate = filteredData.map((data: any) => data.registered.date);
@@ -204,8 +239,6 @@ export const Layout = ({datas}: LayoutProps) => {
       if(sortByStorage) {
          handleSortBy(sortByStorage)
       }
-      
-      console.log('sorted Data: ' + JSON.stringify(sortBy))
       
       if (!isLoading) {
          setDots(0); // Reset dots when loading becomes false
@@ -226,16 +259,14 @@ export const Layout = ({datas}: LayoutProps) => {
 
    }, [ isLoading, isCopied ])
 
-   // useEffect(()=>{
-   //    const intervalDot2 = setInterval(() => {
-         
-   //    }, 400);
-
-   //    return ()=>{
-   //       clearInterval(intervalDot2);
-   //    };
+   useEffect(() => {
+      document.addEventListener('mousedown', handleClickOutside);
       
-   // })
+      // Clean up the event listener when the component unmounts
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }, []);
 
    return (
       <Grid
@@ -254,10 +285,6 @@ export const Layout = ({datas}: LayoutProps) => {
                   className={`
                      py-5
                      px-3
-                     flex 
-                     flex-wrap
-                     justify-center
-                     gap-5
                      overflow-y-scroll
                      overflow-x-hidden
                      scrollbar-hide
@@ -266,9 +293,16 @@ export const Layout = ({datas}: LayoutProps) => {
                   height='h-full'
                >
                   
-                  { sortBy ? 
-                        <>
-                           { sortBy.map((sort:any)=>
+                  { sortBy  ? 
+                        <div 
+                           className='
+                              flex
+                              flex-col
+                              w-full
+                              gap-6
+                           '
+                        >
+                           { sortBy?.map((sort:any)=>
                               <Button
                               key={sort.login.uuid}
 
@@ -335,10 +369,17 @@ export const Layout = ({datas}: LayoutProps) => {
                            </Button>
                            )
                         }
-                        </>
+                        </div>
                      : 
-                     <>
-                     { datas.map((data:any)=>
+                     <div
+                        className='
+                           flex
+                           flex-col
+                           w-full
+                           gap-6
+                        '
+                     >
+                     { datas.results.map((data:any)=>
                         <Button
                         key={data.login.uuid}
 
@@ -405,7 +446,7 @@ export const Layout = ({datas}: LayoutProps) => {
                      </Button>
                      )
                   }
-                  </>
+                  </div>
                   }
                   
                </RowCol>
@@ -454,118 +495,204 @@ export const Layout = ({datas}: LayoutProps) => {
                                     <div
                                        className='
                                           z-50
+                                          bg-gray-300
                                        '
+                                       ref={inputRef}
                                     >
                                        <Dropdown>
-                                       <Button
-                                          onClick={() =>{
-                                             toggleSortByDropdown();
-                                          }}
-                                          type='button'
-                                          className='
-                                             w-20
-                                             py-2
-                                             rounded-lg
-                                             text-center
-                                             text-white
-                                             bg-red-700
-                                          '
-                                       >
-                                          Sort By
-                                       </Button>
-                                       { isDropdown.sortByDropdown && 
-                                          <>
-                                             <SubDropdown>
-                                                <Button
-                                                   onMouseOver={handleGenderMouseOver}
-                                                   onClick={()=> {
-                                                      handleSortBy('gender');
-                                                      setDropdown({ 
-                                                         nameDropdown: true,
-                                                         sortByDropdown: true
-                                                      });
-                                                   }}
-                                                   className={`
-                                                      hover:bg-red-800
-                                                      w-full
-                                                      py-2
-                                                   `}
-                                                >
-                                                   Gender
-                                                </Button>
-                                                {/* { isDropdown.genderDropdown &&
-                                                   <SubButton>
-                                                      <Button
-                                                         onClick={()=> handleSortBy('gender')}
-                                                         type='button'
-                                                         className={`
-                                                            hover:bg-red-800
-                                                            w-full
-                                                            py-2
-                                                         `}
+                                          <Button
+                                             onClick={() =>{
+                                                toggleSortByDropdown();
+                                             }}
+                                             type='button'
+                                             className='
+                                                w-20
+                                                py-2
+                                                rounded-lg
+                                                text-center
+                                                text-white
+                                                bg-red-700
+                                             '
+                                          >
+                                             Sort By
+                                          </Button>
+                                          { isDropdown.sortByDropdown && 
+                                             <>
+                                                <SubDropdown>
+                                                   <Button
+                                                      onMouseOver={handleGenderMouseOver}
+                                                      onClick={()=> {
+                                                         setDropdown({ 
+                                                            nameDropdown: true,
+                                                            sortByDropdown: true
+                                                         });
+                                                      }}
+                                                      className={`
+                                                         hover:bg-red-800
+                                                         w-full
+                                                         py-2
+                                                      `}
+                                                   >
+                                                      Gender
+                                                   </Button>
+                                                   { isDropdown.genderDropdown &&
+                                                      <SubButton
+                                                         className='
+                                                            w-28
+                                                            bg-blue-900
+                                                         '
                                                       >
-                                                         Male
-                                                      </Button>
-                                                      <Button
-                                                         className={`
-                                                            hover:bg-red-800
-                                                            w-full
-                                                            py-2
-                                                         `}
+                                                         <Button
+                                                            onClick={()=> {
+                                                               handleSortBy('male');
+                                                               setDropdown({ 
+                                                                  genderDropdown: true,
+                                                                  sortByDropdown: true
+                                                               });
+                                                            }}
+                                                            type='button'
+                                                            className={`
+                                                               hover:bg-red-800
+                                                               w-full
+                                                               py-2
+                                                            `}
+                                                         >
+                                                            Male
+                                                         </Button>
+                                                         <Button
+                                                            onClick={()=> {
+                                                               handleSortBy('female');
+                                                               setDropdown({ 
+                                                                  genderDropdown: true,
+                                                                  sortByDropdown: true
+                                                               });
+                                                            }}
+                                                            className={`
+                                                               hover:bg-red-800
+                                                               w-full
+                                                               py-2
+                                                            `}
+                                                         >
+                                                            Female
+                                                         </Button>
+                                                      </SubButton>
+                                                   }
+                                                   
+                                                </SubDropdown>
+                                                <SubDropdown>
+                                                   <Button
+                                                      onMouseOver={handleNameMouseOver}
+                                                      onClick={()=> {
+                                                         setDropdown({ 
+                                                            nameDropdown: true,
+                                                            sortByDropdown: true
+                                                         });
+                                                      }}
+                                                      className={`
+                                                         hover:bg-red-800
+                                                         w-full
+                                                         py-2
+                                                      `}
+                                                   >
+                                                      Name
+                                                   </Button>
+                                                   
+                                                   { isDropdown.nameDropdown &&
+                                                      <SubButton
+                                                         className='
+                                                            w-28
+                                                            bg-blue-900
+                                                      '
                                                       >
-                                                         Female
-                                                      </Button>
-                                                   </SubButton>
-                                                } */}
-                                                
-                                             </SubDropdown>
-                                             <SubDropdown>
-                                                <Button
-                                                   onMouseOver={handleNameMouseOver}
-                                                   onClick={()=> {
-                                                      handleSortBy('name.first');
-                                                      setDropdown({ 
-                                                         nameDropdown: true,
-                                                         sortByDropdown: true
-                                                      });
-                                                   }}
-                                                   className={`
-                                                      hover:bg-red-800
-                                                      w-full
-                                                      py-2
-                                                   `}
-                                                >
-                                                   Name
-                                                </Button>
-                                                
-                                                {/* { isDropdown.nameDropdown &&
-                                                   <SubButton>
-                                                      <Button
-                                                         onClick={()=> handleSortBy('name.first')}
-                                                         type='button'
-                                                         className={`
-                                                            hover:bg-red-800
-                                                            w-full
-                                                            py-2
-                                                         `}
+                                                         <Button
+                                                            onClick={()=> {
+                                                               handleSortBy('name.first');
+                                                               setDropdown({ 
+                                                                  nameDropdown: true,
+                                                                  sortByDropdown: true
+                                                               });
+                                                            }}
+                                                            type='button'
+                                                            className={`
+                                                               hover:bg-red-800
+                                                               w-full
+                                                               py-2
+                                                            `}
+                                                         >
+                                                            FirstName
+                                                         </Button>
+                                                         <Button
+                                                            onClick={()=> {
+                                                               handleSortBy('name.last');
+                                                               setDropdown({ 
+                                                                  nameDropdown: true,
+                                                                  sortByDropdown: true
+                                                               });
+                                                            }}
+                                                            className={`
+                                                               hover:bg-red-800
+                                                               w-full
+                                                               py-2
+                                                            `}
+                                                         >
+                                                            LastName
+                                                         </Button>
+                                                      </SubButton>
+                                                   }
+                                                </SubDropdown>
+                                                <SubDropdown>
+                                                   <Button
+                                                      onMouseOver={handleCountryMouseOver}
+                                                      onClick={()=> {
+                                                         setDropdown({ 
+                                                            countryDropdown: true,
+                                                            sortByDropdown: true
+                                                         });
+                                                      }}
+                                                      className={`
+                                                         hover:bg-red-800
+                                                         w-full
+                                                         py-2
+                                                      `}
+                                                   >
+                                                      Country
+                                                   </Button>
+                                                   
+                                                   { isDropdown.countryDropdown &&
+                                                      <SubButton
+                                                         className='
+                                                            w-28
+                                                            bg-blue-900
+                                                            max-h-40
+                                                            overflow-y-scroll
+                                                            scrollbar-hide
+                                                         '
                                                       >
-                                                         FirstName
-                                                      </Button>
-                                                      <Button
-                                                         onClick={()=> handleSortBy('name.last')}
-                                                         className={`
-                                                            hover:bg-red-800
-                                                            w-full
-                                                            py-2
-                                                         `}
-                                                      >
-                                                         LastName
-                                                      </Button>
-                                                   </SubButton>
-                                                } */}
-                                             </SubDropdown>
-                                          </>
-                                       }
+                                                         { datas.results.map((country: any) =>
+                                                            <Button
+                                                               key={country.login.uuid}
+                                                               onClick={()=> {
+                                                                  handleSortBy(`location.country.${country.location.country}`);
+                                                                  setDropdown({ 
+                                                                     countryDropdown: true,
+                                                                     sortByDropdown: true
+                                                                  });
+                                                               }}
+                                                               type='button'
+                                                               className={`
+                                                                  hover:bg-red-800
+                                                                  w-full
+                                                                  py-2
+                                                               `}
+                                                            >
+                                                               { country.location.country }
+                                                            </Button>
+                                                         )}
+                                                      </SubButton>
+                                                   }
+                                                </SubDropdown>
+                                             </>
+                                          }
                                        </Dropdown>
                                     </div>
                                     <div
@@ -1055,7 +1182,7 @@ export const Layout = ({datas}: LayoutProps) => {
                                           <div
                                              className='mt-7'
                                           >
-                                             {/* <p
+                                             <p
                                                 className='
                                                    indent-8
                                                    text-xl
@@ -1063,10 +1190,7 @@ export const Layout = ({datas}: LayoutProps) => {
                                                 '
                                              >
                                                 <b>{data.name.title}. {data.name.last} {data.name.first}</b>, an avid user of our platform, has been actively engaged with our service for the past year. {data.gender === 'male' ? 'He': 'She'} joined our platform in {readableRegistedDate}. {data.gender === 'male' ? 'His': 'Her'} journey on our platform reflects a diverse range of activities, showcasing the versatility of our offerings. From {data.gender === 'male' ? 'his': 'her'}  early days of exploring informative articles and engaging with online courses to enhance {data.gender === 'male' ? 'his': 'her'} professional skills, {data.gender === 'male' ? 'he': 'she'} quickly evolved into an active contributor, regularly sharing insightful content with the community. <b>{data.name.title}. {data.name.last} {data.name.first}</b>'s enthusiasm for networking also shines through {data.gender === 'male' ? 'his': 'her'} consistent participation in our webinars and virtual events, where {data.gender === 'male' ? 'he': 'she'} connects with like-minded individuals and industry experts. {data.gender === 'male' ? 'His': 'Her'} user profile is a testament to {data.gender === 'male' ? 'his': 'her'} commitment to lifelong learning and {data.gender === 'male' ? 'his': 'her'} desire to collaborate with others. <b>{data.name.title}. {data.name.last} {data.name.first}</b> embodies the vibrant and dynamic user community that our service fosters.
-                                             </p> */}
-                                             {sortBy?.map((s:any)=>
-                                                <li className='text-base' key={s.login.uuid}>{s.email}</li>
-                                             )}
+                                             </p>
                                           </div>
                                        </RowCol>
 

@@ -3,22 +3,26 @@
 import React from 'react'
 import { Button } from './Button'
 
-interface SubButtonProps {
+type SubButtonProps = {
    children: React.ReactNode
+   className?: string
+   ref?: any
 }
 
 export const SubButton = ({
-   children
+   children,
+   className,
+   ref
 }: SubButtonProps) => {
    return (
       <span
-         className='
+         className={`
             absolute 
             left-20
-            w-28
-            z-50
-            bg-blue-900
-         '
+            z-50 
+            ${className}
+         `}
+         ref={ref}
       >
          {children}
       </span>
