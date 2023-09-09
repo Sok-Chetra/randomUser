@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useLayoutContext } from '../ProviderComponent/LayoutProvider';
 import Cookies from 'js-cookie';
 
-interface TextProps{
+type TextProps = {
    children?: React.ReactNode;
    className?: string;
    color?: string;
@@ -64,7 +64,8 @@ export const Text = ({
                color + 
                ' ' + 
                border +
-               '&nbsp; flex items-end justify-start gap-3 '
+               ' ' + 
+               'flex items-end justify-start gap-3'
             }
             ref={ref}
          >

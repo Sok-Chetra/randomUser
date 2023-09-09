@@ -149,11 +149,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             alt={alt}
             src={src}
             list={list}
-            autoComplete={autoComplete}
-            onChange={onChange} 
+            autoComplete={'off'}
+            onChange={onChange}
             ref={inputRef}
             onMouseDown={onMouseDown}
             onClick={onClick}
+            
          />
          <span
             className={`

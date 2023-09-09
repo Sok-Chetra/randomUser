@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { Button } from './Button'
-import { SubDropdown } from './SubDropdown'
+import { DropdownButton } from './DropdownButton'
 import { useLayoutContext } from '../ProviderComponent/LayoutProvider'
 import { SubButton } from './SubButton'
 
