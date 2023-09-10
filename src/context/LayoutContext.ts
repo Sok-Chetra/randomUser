@@ -5,12 +5,12 @@ interface LayoutProviderProps{
    isClick: any;
    isShown: any;
    isAuthenticated: any;
-   sortBy: any;
+   dataSorted: any;
    setIsAuthenticated: React.Dispatch<React.SetStateAction<any>>;
    setIsShown: React.Dispatch<React.SetStateAction<any>>;
    setIsClick: React.Dispatch<React.SetStateAction<any>>;
    setData: React.Dispatch<React.SetStateAction<any>>;
-   setSortBy: React.Dispatch<React.SetStateAction<any>>;
+   setdataSorted: React.Dispatch<React.SetStateAction<any>>;
 }
 export const LayoutContext = createContext<LayoutProviderProps>({
    data: {},
@@ -21,6 +21,6 @@ export const LayoutContext = createContext<LayoutProviderProps>({
    setIsShown: () => {},
    setIsClick: () =>{},
    setData: () => {},
-   sortBy: {},
-   setSortBy: ()=>{},
+   dataSorted: {},
+   setdataSorted: ()=>{},
  });

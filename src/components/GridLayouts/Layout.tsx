@@ -21,21 +21,20 @@ interface LayoutProps {
    datas: any;
 }
 
-
 export const Layout = ({datas}: LayoutProps) => {
    
    const [ isLoading, setLoading ] = useState(true)
    const [ dots, setDots ] = useState(1);
    const [ selectedId, setSelectedId ] = useState(datas.results[0].login.uuid); 
-   const [ isCopied, setIsCopied ] = useState(false);   
+   const [ isCopied, setIsCopied ] = useState(false);
    const [ userInput, setUserInput ] = useState('')
    const [ uuid, setUUID ] = useState()
-   const [ searchedUser, setSearchedUser ] = useState<any[] | null>();
+   const [ searchedUser, setSearchedUser ] = useState<any[] | null>(); 
    const { isAuthenticated, setIsAuthenticated } = useLayoutContext()
    const { isClick, setIsClick } = useLayoutContext();
    const { isShown, setIsShown } = useLayoutContext()
-   const { sortBy, setSortBy } = useLayoutContext()
-   const { setData } = useLayoutContext()
+   const { dataSorted, setdataSorted } = useLayoutContext()
+   const [ sortBy, setSortBy ] = useState<any | null>(Cookies.get('sortBy') || null)
    const inputRef: any = useRef(null);
    const [ isDropdown, setDropdown ]: any = useState<{
       sortByDropdown: boolean;
@@ -62,7 +61,6 @@ export const Layout = ({datas}: LayoutProps) => {
 
    function handleClickUser(id: any) {
       setSelectedId(id);
-      
    }
    
    function handleClickInput (e: any) {
@@ -112,7 +110,7 @@ export const Layout = ({datas}: LayoutProps) => {
       });
     
       setSearchedUser(searchValue ? searchedDataUser : null);
-      setSortBy(searchValue ? searchedDataUser : null)
+      setdataSorted(searchValue ? searchedDataUser : Cookies.remove('sortBy')); 
    }
 
    function handleHidePassword(){
@@ -134,16 +132,22 @@ export const Layout = ({datas}: LayoutProps) => {
       }
    }
 
-   function handleSortBy(sortWith: string) {
-      const currentOrderBy = window.localStorage.getItem('orderBy') || 'asc';
+   function handleActivateSort(){
+      if(sortBy){
+         handleSortBy(sortBy);
+      }
+   }
+
+   function handleSortBy(By: string) {
+      const currentOrderBy = Cookies.get('orderBy') || 'asc';
       const newOrderBy = currentOrderBy === 'asc' ? 'desc' : 'asc';
-      window.localStorage.setItem('orderBy', newOrderBy);
-      window.localStorage.setItem('sortBy', sortWith);
+      Cookies.set('orderBy', newOrderBy);
+      Cookies.set('sortBy', By);
    
       // Sort the entire dataset
       const sortedData = datas.results.sort((a: any, b: any) => {
-         const aPropertyValue = getNestedPropertyValue(a, sortWith);
-         const bPropertyValue = getNestedPropertyValue(b, sortWith);
+         const aPropertyValue = getNestedPropertyValue(a, By);
+         const bPropertyValue = getNestedPropertyValue(b, By);
    
          if (newOrderBy === 'asc') {
             return aPropertyValue?.localeCompare(bPropertyValue);
@@ -154,11 +158,11 @@ export const Layout = ({datas}: LayoutProps) => {
    
       let filteredData = sortedData;
    
-      if (sortWith === 'male' || sortWith === 'female') {
+      if (By === 'male' || By === 'female') {
          // Filter data to include only 'male' or 'female' records
-         filteredData = sortedData.filter((item: any) => item.gender === sortWith);
-      } else if(sortWith.startsWith('location.country.')){
-         const countryToFilter = sortWith.substring('location.country.'.length);
+         filteredData = sortedData.filter((item: any) => item.gender === By);
+      } else if(By.startsWith('location.country.')){
+         const countryToFilter = By.substring('location.country.'.length);
          filteredData = filterByNestedProperty(sortedData, 'location.country', countryToFilter);
       }
    
@@ -168,7 +172,7 @@ export const Layout = ({datas}: LayoutProps) => {
       }
 
       if (filteredData) {
-         setSortBy(filteredData);
+         setdataSorted(filteredData);
       }
    }
    
@@ -247,7 +251,10 @@ export const Layout = ({datas}: LayoutProps) => {
    const readableRegistedDate = parsedRegisteredDates.map((parsedRegisteredDates: Date) => format(parsedRegisteredDates, "MMMM d, yyyy")); 
 
    useEffect(() => {
-      
+      // alert(sortBy)
+      if(sortBy){
+         handleActivateSort()
+      }
       if (!isLoading) {
          setDots(0); // Reset dots when loading becomes false
          return;
@@ -310,7 +317,7 @@ export const Layout = ({datas}: LayoutProps) => {
                      height='h-full'
                   >
                      {/* Display Sorted Data */}
-                     { sortBy  ? 
+                     { dataSorted  ? 
                         <div 
                            className='
                               flex
@@ -319,7 +326,7 @@ export const Layout = ({datas}: LayoutProps) => {
                               gap-6
                            '
                         >
-                           { sortBy?.map((sort:any)=>
+                           { dataSorted?.map((sort:any)=>
                               <Button
                                  key={sort.login.uuid}
                                  onClick={()=>handleClickUser(sort.login.uuid)}
@@ -1634,10 +1641,12 @@ export const Layout = ({datas}: LayoutProps) => {
                                                             >
                                                                <Input 
                                                                   type='text'
+                                                                  placeholder='Enter the password'
                                                                   className='
                                                                      rounded-md
                                                                      px-3
                                                                      w-48
+                                                                     placeholder:text-sm
                                                                   '
                                                                   onChange={handleInputSalt}
                                                                   onKeyDown={(e: any)=>{
@@ -1676,7 +1685,7 @@ export const Layout = ({datas}: LayoutProps) => {
                                                          }
                                                       </Button>
                                                    }
-                                                   {/* {data.login.password} */}
+                                                   ( Password is {data.login.password} )
                                                 </div>
                                                 <div>
                                                    <Text
